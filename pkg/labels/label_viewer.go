@@ -33,10 +33,11 @@ func findFilesWithTags(dir string) map[string][]*Template {
 		if err != nil {
 			return err
 		}
-		if template.Tags != nil {
-			for _, tag := range template.Tags {
-				tagMap[tag] = append(tagMap[tag], template)
-			}
+		for _, tag := range template.Tags {
+			tagMap[tag] = append(tagMap[tag], template)
+		}
+		if template.Tags == nil {
+			tagMap["untagged"] = append(tagMap["untagged"], template)
 		}
 		return nil
 	})

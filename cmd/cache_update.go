@@ -16,6 +16,7 @@ var cacheUpdateCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		templates.CacheManagedNotifications()
+		templates.CacheOpsSOP()
 	},
 }
 
