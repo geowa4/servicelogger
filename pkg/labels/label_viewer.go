@@ -1,49 +1,18 @@
 package labels
 
 import (
-	"encoding/json"
 	"github.com/geowa4/servicelogger/pkg/templates"
-	"io/fs"
-	"os"
-	"path/filepath"
 )
 
-type Template struct {
-	Severity     string   `json:"severity"`
-	ServiceName  string   `json:"service_name"`
-	Summary      string   `json:"summary"`
-	Description  string   `json:"description"`
-	InternalOnly bool     `json:"internal_only"`
-	Tags         []string `json:"_tags,omitempty"`
-	SourcePath   string
-}
-
-func findFilesWithTags(dir string) map[string][]*Template {
-	tagMap := map[string][]*Template{}
-	_ = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return err
-		}
-		file, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		template := &Template{SourcePath: path}
-		err = json.Unmarshal(file, template)
-		if err != nil {
-			return err
-		}
+func FindFilesWithTags() map[string][]*templates.Template {
+	tagMap := map[string][]*templates.Template{}
+	templates.WalkTemplates(func(template *templates.Template) {
 		for _, tag := range template.Tags {
 			tagMap[tag] = append(tagMap[tag], template)
 		}
 		if template.Tags == nil {
 			tagMap["untagged"] = append(tagMap["untagged"], template)
 		}
-		return nil
 	})
 	return tagMap
-}
-
-func FindFilesWithTags() map[string][]*Template {
-	return findFilesWithTags(templates.GetOsdServiceLogTemplatesDir())
 }
