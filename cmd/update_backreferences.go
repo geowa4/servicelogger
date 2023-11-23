@@ -32,7 +32,7 @@ var updateBackRefsCmd = &cobra.Command{
 			}
 			for _, sop := range referencingSOPs {
 				// Ensure current references are tagged
-				if !slices.Contains(template.Tags, sop) {
+				if !slices.Contains(template.Tags, sopPrefix+sop) {
 					template.Tags = append(template.Tags, sopPrefix+sop)
 					amendedTags = true
 				}
