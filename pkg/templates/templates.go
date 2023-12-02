@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"github.com/geowa4/servicelogger/pkg/config"
 	"os"
 	"regexp"
@@ -21,6 +22,24 @@ type Template struct {
 	EventStreamId string   `json:"event_stream_id,omitempty"`
 	Tags          []string `json:"_tags,omitempty"`
 	SourcePath    string   `json:"-"`
+}
+
+func (t *Template) String() string {
+	md := fmt.Sprintf(
+		"# %s\n\n%s",
+		t.Summary,
+		t.Description,
+	)
+	if len(t.Tags) > 0 {
+		md += fmt.Sprintf("\n\n_Tags_: %s", strings.Join(t.Tags, ", "))
+	}
+	re, err := regexp.Compile("\\$\\{[A-Z0-9_]+}")
+	if err != nil {
+		return md
+	}
+	return re.ReplaceAllStringFunc(md, func(match string) string {
+		return fmt.Sprintf("*%s*", match)
+	})
 }
 
 func GetRelativePathForManagedNotifications(filePath string) string {
