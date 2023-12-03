@@ -70,7 +70,7 @@ func (m *model) Init() tea.Cmd {
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch keypress := msg.String(); keypress {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
 
@@ -79,11 +79,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			fallthrough
-		case "tab":
-			//focus next
-			m.focusIndex++
+		case "tab", "down", "shift+tab", "up":
+			if keypress == "tab" || keypress == "down" {
+				m.focusIndex++
+			} else {
+				m.focusIndex--
+			}
 			if m.focusIndex > len(m.inputs) {
 				m.focusIndex = 0
+			} else if m.focusIndex < 0 {
+				m.focusIndex = len(m.inputs)
 			}
 			cmds := make([]tea.Cmd, len(m.inputs))
 			for i := 0; i < len(m.inputs); i++ {
