@@ -80,7 +80,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			fallthrough
 		case "tab", "down", "shift+tab", "up":
-			if keypress == "tab" || keypress == "down" {
+			if keypress == "tab" || keypress == "down" || keypress == "enter" {
 				m.focusIndex++
 			} else {
 				m.focusIndex--
