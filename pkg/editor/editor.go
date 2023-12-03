@@ -63,7 +63,7 @@ func initialModel(template *templates.Template) *model {
 			Description:   template.Description,
 			InternalOnly:  template.InternalOnly,
 			EventStreamId: template.EventStreamId,
-			Tags:          append(make([]string, len(template.Tags)), template.Tags...),
+			Tags:          append(make([]string, 0), template.Tags...),
 			SourcePath:    template.SourcePath,
 		},
 		variables:  allMatches,
