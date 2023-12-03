@@ -10,13 +10,10 @@ import (
 	"github.com/geowa4/servicelogger/pkg/templates"
 	"github.com/muesli/termenv"
 	"os"
-	"slices"
 	"strings"
 )
 
 var (
-	templateVarRegexp = templates.GetTemplateVarRegexp()
-
 	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	cursorStyle  = focusedStyle.Copy()
@@ -33,16 +30,9 @@ type model struct {
 }
 
 func initialModel(template *templates.Template) *model {
-	summaryMatches := templateVarRegexp.FindAllString(template.Summary, -1)
-	descriptionMatches := templateVarRegexp.FindAllString(template.Description, -1)
-	allMatches := make([]string, 0)
-	for _, match := range append(summaryMatches, descriptionMatches...) {
-		if !slices.Contains(allMatches, match) {
-			allMatches = append(allMatches, match)
-		}
-	}
-	inputs := make([]textinput.Model, len(allMatches))
-	for i, match := range allMatches {
+	variables := template.GetVariables()
+	inputs := make([]textinput.Model, len(variables))
+	for i, match := range variables {
 		input := textinput.New()
 		input.Cursor.Style = cursorStyle
 		input.CharLimit = 80
@@ -66,7 +56,7 @@ func initialModel(template *templates.Template) *model {
 			Tags:          append(make([]string, 0), template.Tags...),
 			SourcePath:    template.SourcePath,
 		},
-		variables:  allMatches,
+		variables:  variables,
 		inputs:     inputs,
 		focusIndex: 0,
 	}

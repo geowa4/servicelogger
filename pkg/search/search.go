@@ -1,6 +1,7 @@
 package search
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/bubbles/paginator"
 	tea "github.com/charmbracelet/bubbletea"
@@ -51,6 +52,18 @@ func (m *model) updateSearchText(newSearchText string) {
 
 func initialModel() *model {
 	allTemplates := make([]*templates.Template, 0)
+	template := &templates.Template{SourcePath: ""}
+	err := json.Unmarshal([]byte(`{
+			"severity": "Info",
+			"service_name": "SREManualAction",
+			"summary": "INTERNAL ONLY, DO NOT SHARE WITH CUSTOMER",
+			"description": "${MESSAGE}",
+			"internal_only": true
+		}`), template)
+	if err == nil {
+		allTemplates = append(allTemplates, template)
+	}
+
 	templates.WalkTemplates(func(template *templates.Template) {
 		allTemplates = append(allTemplates, template)
 	})

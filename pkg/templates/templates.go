@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -42,9 +43,19 @@ func (t *Template) String() string {
 	if len(t.Tags) > 0 {
 		md += fmt.Sprintf("\n\n_Tags_: %s", strings.Join(t.Tags, ", "))
 	}
-	return templateVarRegexp.ReplaceAllStringFunc(md, func(match string) string {
-		return fmt.Sprintf("*%s*", match)
-	})
+	return md
+}
+
+func (t *Template) GetVariables() []string {
+	summaryMatches := templateVarRegexp.FindAllString(t.Summary, -1)
+	descriptionMatches := templateVarRegexp.FindAllString(t.Description, -1)
+	allMatches := make([]string, 0)
+	for _, match := range append(summaryMatches, descriptionMatches...) {
+		if !slices.Contains(allMatches, match) {
+			allMatches = append(allMatches, match)
+		}
+	}
+	return allMatches
 }
 
 func GetRelativePathForManagedNotifications(filePath string) string {
