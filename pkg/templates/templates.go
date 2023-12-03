@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/geowa4/servicelogger/pkg/config"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -12,6 +13,14 @@ const (
 	managedNotificationsDirName = "managed-notifications"
 	opsSOPDirName               = "ops-sop"
 )
+
+var (
+	templateVarRegexp = regexp.MustCompile("\\$\\{[A-Z0-9_]+}")
+)
+
+func GetTemplateVarRegexp() *regexp.Regexp {
+	return templateVarRegexp
+}
 
 type Template struct {
 	Severity      string   `json:"severity"`
@@ -33,11 +42,7 @@ func (t *Template) String() string {
 	if len(t.Tags) > 0 {
 		md += fmt.Sprintf("\n\n_Tags_: %s", strings.Join(t.Tags, ", "))
 	}
-	re, err := regexp.Compile("\\$\\{[A-Z0-9_]+}")
-	if err != nil {
-		return md
-	}
-	return re.ReplaceAllStringFunc(md, func(match string) string {
+	return templateVarRegexp.ReplaceAllStringFunc(md, func(match string) string {
 		return fmt.Sprintf("*%s*", match)
 	})
 }
@@ -55,13 +60,13 @@ func GetServiceLogTemplatesDir() string {
 	if err != nil {
 		return ""
 	}
-	return cloneTarget + string(os.PathSeparator)
+	return cloneTarget
 }
 
 // GetOsdServiceLogTemplatesDir returns the directory to use to find templates for OSD
 // and returns empty string if there was an unlikely error
 func GetOsdServiceLogTemplatesDir() string {
-	return GetServiceLogTemplatesDir() + string(os.PathSeparator) + "osd"
+	return filepath.Join(GetServiceLogTemplatesDir(), "osd")
 }
 
 // GetOpsSOPDir returns the directory to use to find Ops SOPs

@@ -109,7 +109,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.searchText) > 0 {
 				m.updateSearchText(m.searchText[:len(m.searchText)-1])
 			}
-		case "ctrl+c":
+		case "ctrl+c", "esc":
 			m.templateSelection = nil
 			return m, tea.Quit
 		case "enter":
@@ -156,6 +156,9 @@ func (m *model) searchView() string {
 }
 
 func (m *model) displayView() string {
+	if m.templateSelection == nil {
+		return "null"
+	}
 	srcMd := m.templateSelection.String()
 	return lipgloss.NewStyle().
 		Width(80).
