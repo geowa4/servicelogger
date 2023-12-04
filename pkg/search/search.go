@@ -38,9 +38,9 @@ func (m *model) updateSearchText(newSearchText string) {
 	} else {
 		m.filteredTemplates = make([]*templates.Template, 0)
 		for _, template := range m.allTemplates {
-			if strings.Contains(strings.ToLower(template.Summary), m.searchText) ||
-				strings.Contains(strings.ToLower(template.Description), m.searchText) ||
-				strings.Contains(strings.ToLower(strings.Join(template.Tags, "")), m.searchText) {
+			if strings.Contains(template.Summary, m.searchText) ||
+				strings.Contains(template.Description, m.searchText) ||
+				strings.Contains(strings.Join(template.Tags, ""), m.searchText) {
 				// TODO: template should be a Stringer that has all this data (as markdown?)
 				m.filteredTemplates = append(m.filteredTemplates, template)
 			}
