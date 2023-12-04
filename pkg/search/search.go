@@ -33,12 +33,14 @@ func (m *model) updateSearchText(newSearchText string) {
 
 	if m.searchText == "" {
 		m.filteredTemplates = m.allTemplates
+		m.templateCursor = 0
+		m.templateSelection = m.filteredTemplates[m.templateCursor]
 	} else {
 		m.filteredTemplates = make([]*templates.Template, 0)
 		for _, template := range m.allTemplates {
-			if strings.Contains(template.Summary, m.searchText) ||
-				strings.Contains(template.Description, m.searchText) ||
-				strings.Contains(strings.Join(template.Tags, ""), m.searchText) {
+			if strings.Contains(strings.ToLower(template.Summary), m.searchText) ||
+				strings.Contains(strings.ToLower(template.Description), m.searchText) ||
+				strings.Contains(strings.ToLower(strings.Join(template.Tags, "")), m.searchText) {
 				// TODO: template should be a Stringer that has all this data (as markdown?)
 				m.filteredTemplates = append(m.filteredTemplates, template)
 			}
@@ -130,7 +132,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		default:
 			m.updateSearchText(m.searchText + keypress)
-			m.templateSelection = m.filteredTemplates[m.templateCursor]
+			if len(m.filteredTemplates) > m.templateCursor {
+				m.templateSelection = m.filteredTemplates[m.templateCursor]
+			} else {
+				m.templateSelection = nil
+			}
 		}
 	}
 	return m, nil
