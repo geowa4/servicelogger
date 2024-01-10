@@ -179,6 +179,10 @@ func Program(slResponseBytes []byte) {
 		_, _ = fmt.Fprintf(os.Stderr, "could not parse input: %v", err)
 		os.Exit(1)
 	}
+	if slResponse.Total == 0 {
+		_, _ = fmt.Fprintf(os.Stderr, "no service logs to view")
+		os.Exit(0)
+	}
 	tm, err := tea.NewProgram(initialModel(&slResponse), tea.WithOutput(os.Stderr), tea.WithAltScreen()).Run()
 	if err != nil {
 		return
