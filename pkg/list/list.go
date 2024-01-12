@@ -156,6 +156,11 @@ func (m *model) getPaneHeight() int {
 
 func (m *model) View() string {
 	m.list.SetSize(m.getPaneWidth()-horizontalPadding*2, m.getPaneHeight())
+	md := m.selectedServiceLog.Markdown()
+	renderedMd, err := glamour.Render(md, "notty")
+	if err != nil {
+		renderedMd = md
+	}
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		lipgloss.NewStyle().
@@ -166,7 +171,7 @@ func (m *model) View() string {
 			Render(
 				paddingStyle.Render(m.list.View()),
 			),
-		paddingStyle.Width(m.getPaneWidth()).Render(m.selectedServiceLog.Markdown()),
+		paddingStyle.Width(m.getPaneWidth()).Render(renderedMd),
 	)
 }
 

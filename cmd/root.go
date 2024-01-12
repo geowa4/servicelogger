@@ -30,7 +30,6 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ${$XDG_CONFIG_DIR:-$HOME/.config}/ocm/workon.yaml)")
 }
 
 // initConfig reads in config file and ENV variables if set.
