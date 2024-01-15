@@ -27,7 +27,7 @@ type Template struct {
 	Severity      string   `json:"severity"`
 	ServiceName   string   `json:"service_name"`
 	Summary       string   `json:"summary"`
-	Description   string   `json:"description"`
+	Desc          string   `json:"description"`
 	InternalOnly  bool     `json:"internal_only"`
 	EventStreamId string   `json:"event_stream_id,omitempty"`
 	Tags          []string `json:"_tags,omitempty"`
@@ -38,7 +38,7 @@ func (t *Template) String() string {
 	md := fmt.Sprintf(
 		"# %s\n\n%s",
 		t.Summary,
-		t.Description,
+		t.Desc,
 	)
 	if len(t.Tags) > 0 {
 		md += fmt.Sprintf("\n\n_Tags_: %s", strings.Join(t.Tags, ", "))
@@ -48,7 +48,7 @@ func (t *Template) String() string {
 
 func (t *Template) GetVariables() []string {
 	summaryMatches := templateVarRegexp.FindAllString(t.Summary, -1)
-	descriptionMatches := templateVarRegexp.FindAllString(t.Description, -1)
+	descriptionMatches := templateVarRegexp.FindAllString(t.Desc, -1)
 	allMatches := make([]string, 0)
 	for _, match := range append(summaryMatches, descriptionMatches...) {
 		if !slices.Contains(allMatches, match) {

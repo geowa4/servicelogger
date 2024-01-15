@@ -3,87 +3,110 @@ package search
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/bubbles/paginator"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/geowa4/servicelogger/pkg/templates"
 	"github.com/muesli/termenv"
 	"os"
-	"strings"
 )
 
 var (
-	perPage          = 10
-	subduedStyle     = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#847A85", Dark: "#979797"})
-	verySubduedStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#DDDADA", Dark: "#3C3C3C"})
+	verticalPadding   = 1
+	horizontalPadding = 2
+	paddingStyle      = lipgloss.NewStyle().Padding(verticalPadding, horizontalPadding)
 )
 
-type model struct {
-	searchText        string
-	allTemplates      []*templates.Template
-	filteredTemplates []*templates.Template
-	templateCursor    int
-	templateSelection *templates.Template
-
-	pager paginator.Model
+type ListableTemplate struct {
+	templates.Template
 }
 
-func (m *model) updateSearchText(newSearchText string) {
-	m.searchText = newSearchText
+func NewListableTemplate(template *templates.Template) *ListableTemplate {
+	lt := &ListableTemplate{}
+	lt.Severity = template.Severity
+	lt.ServiceName = template.ServiceName
+	lt.Summary = template.Summary
+	lt.Desc = template.Desc
+	lt.InternalOnly = template.InternalOnly
+	lt.EventStreamId = template.EventStreamId
+	lt.Tags = template.Tags
+	lt.SourcePath = template.SourcePath
+	return lt
+}
 
-	if m.searchText == "" {
-		m.filteredTemplates = m.allTemplates
-		m.templateCursor = 0
-		m.templateSelection = m.filteredTemplates[m.templateCursor]
-	} else {
-		m.filteredTemplates = make([]*templates.Template, 0)
-		for _, template := range m.allTemplates {
-			if strings.Contains(template.Summary, m.searchText) ||
-				strings.Contains(template.Description, m.searchText) ||
-				strings.Contains(strings.Join(template.Tags, ""), m.searchText) {
-				// TODO: template should be a Stringer that has all this data (as markdown?)
-				m.filteredTemplates = append(m.filteredTemplates, template)
-			}
-		}
+func (t *ListableTemplate) ToTemplate() *templates.Template {
+	return &templates.Template{
+		Severity:      t.Severity,
+		ServiceName:   t.ServiceName,
+		Summary:       t.Summary,
+		Desc:          t.Desc,
+		InternalOnly:  t.InternalOnly,
+		EventStreamId: t.EventStreamId,
+		Tags:          t.Tags,
+		SourcePath:    t.SourcePath,
 	}
+}
 
-	m.pager.SetTotalPages(len(m.filteredTemplates))
-	m.pager.Page = 0
-	m.templateCursor = 0
+func (t *ListableTemplate) FilterValue() string {
+	return t.String()
+}
+
+func (t *ListableTemplate) Title() string {
+	return t.Summary
+}
+
+func (t *ListableTemplate) Description() string {
+	return t.Desc
+}
+
+type model struct {
+	allTemplates      []*ListableTemplate
+	templateSelection *ListableTemplate
+
+	list list.Model
+
+	windowWidth  int
+	windowHeight int
 }
 
 func initialModel() *model {
-	allTemplates := make([]*templates.Template, 0)
-	template := &templates.Template{SourcePath: ""}
+	allTemplates := make([]*ListableTemplate, 0)
+	internalTemplate := &ListableTemplate{}
+	internalTemplate.SourcePath = ""
 	err := json.Unmarshal([]byte(`{
 			"severity": "Info",
 			"service_name": "SREManualAction",
 			"summary": "INTERNAL ONLY, DO NOT SHARE WITH CUSTOMER",
 			"description": "${MESSAGE}",
 			"internal_only": true
-		}`), template)
+		}`), internalTemplate)
 	if err == nil {
-		allTemplates = append(allTemplates, template)
+		allTemplates = append(allTemplates, internalTemplate)
 	}
-
 	templates.WalkTemplates(func(template *templates.Template) {
-		allTemplates = append(allTemplates, template)
+		allTemplates = append(allTemplates, NewListableTemplate(template))
 	})
 
-	pager := paginator.New()
-	pager.PerPage = perPage
-	pager.Type = paginator.Dots
-	pager.ActiveDot = subduedStyle.Render("•")
-	pager.InactiveDot = verySubduedStyle.Render("•")
-	pager.KeyMap = paginator.KeyMap{}
+	items := make([]list.Item, len(allTemplates))
+	for i, t := range allTemplates {
+		items[i] = t
+	}
+	d := list.NewDefaultDelegate()
+	l := list.New(items, d, 0, 0)
+	l.Title = "Service Log Search"
+	l.Styles.Title = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFDF5")).
+		Background(lipgloss.Color("#25A065")).
+		Padding(0, 1)
+	l.KeyMap.Quit.SetKeys("enter", "q")
+	l.KeyMap.Quit.SetHelp("enter/q", "select/quit")
+
 	m := &model{
-		searchText:        "",
 		allTemplates:      allTemplates,
 		templateSelection: allTemplates[0],
-
-		pager: pager,
+		list:              l,
 	}
-	m.updateSearchText("")
 	return m
 }
 
@@ -93,104 +116,59 @@ func (m *model) Init() tea.Cmd {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		start, end := m.pager.GetSliceBounds(len(m.filteredTemplates))
-		switch keypress := msg.String(); keypress {
-		case "up":
-			m.templateCursor--
-			if m.templateCursor < 0 {
-				m.templateCursor = len(m.filteredTemplates) - 1
-				m.pager.Page = m.pager.TotalPages - 1
-			}
-			if m.templateCursor < start {
-				m.pager.PrevPage()
-			}
-			m.templateSelection = m.filteredTemplates[m.templateCursor]
-		case "down":
-			m.templateCursor++
-			if m.templateCursor >= len(m.filteredTemplates) {
-				m.templateCursor = 0
-				m.pager.Page = 0
-			}
-			if m.templateCursor >= end {
-				m.pager.NextPage()
-			}
-			m.templateSelection = m.filteredTemplates[m.templateCursor]
-		case "left":
-			// TODO
-		case "right":
-			// TODO
-		case "backspace":
-			if len(m.searchText) > 0 {
-				m.updateSearchText(m.searchText[:len(m.searchText)-1])
-			}
-		case "ctrl+c", "esc":
-			m.templateSelection = nil
-			return m, tea.Quit
-		case "enter":
-			m.templateSelection = m.filteredTemplates[m.templateCursor]
-			return m, tea.Quit
-		default:
-			m.updateSearchText(m.searchText + keypress)
-			if len(m.filteredTemplates) > m.templateCursor {
-				m.templateSelection = m.filteredTemplates[m.templateCursor]
-			} else {
-				m.templateSelection = nil
-			}
-		}
+	case tea.WindowSizeMsg:
+		m.windowWidth = msg.Width
+		m.windowHeight = msg.Height
 	}
-	return m, nil
+
+	newListModel, cmd := m.list.Update(msg)
+	m.list = newListModel
+	item := newListModel.SelectedItem()
+	if template, ok := item.(*ListableTemplate); ok {
+		m.templateSelection = template
+	}
+	return m, cmd
 }
 
-func (m *model) searchView() string {
-	var s strings.Builder
-	s.WriteString(subduedStyle.Render("↑ / ↓ to navigate; <enter> to select and quit"))
-	s.WriteString("\n\n")
-	start, end := m.pager.GetSliceBounds(len(m.filteredTemplates))
-	height := end - start
-	for i, template := range m.filteredTemplates[start:end] {
-		cursor := " "
-		if i == m.templateCursor%height {
-			cursor = ">"
-		}
-
-		abbreviatedSummary := template.Summary
-		if len(abbreviatedSummary) > 75 {
-			abbreviatedSummary = abbreviatedSummary[0:72] + "..."
-		}
-		s.WriteString(fmt.Sprintf("%s %s\n", cursor, abbreviatedSummary))
+func (m *model) getPaneWidth() int {
+	x, _ := paddingStyle.GetFrameSize()
+	if m.windowWidth <= x {
+		return 0
 	}
-	if m.pager.TotalPages > 1 {
-		s.WriteString(strings.Repeat("\n", perPage-m.pager.ItemsOnPage(len(m.filteredTemplates))+1))
-		s.WriteString(" " + m.pager.View())
-	}
-	s.WriteString("\nSearch Text: ")
-	s.WriteString(m.searchText)
-	s.WriteString("\n")
-	return lipgloss.NewStyle().
-		Width(80).
-		Height(perPage * 2).
-		Padding(1).
-		Render(s.String())
+	return (m.windowWidth - x) / 2
 }
 
-func (m *model) displayView() string {
-	if m.templateSelection == nil {
-		return "null"
+func (m *model) getPaneHeight() int {
+	_, y := paddingStyle.GetFrameSize()
+	if m.windowHeight <= y {
+		return 0
 	}
-	srcMd := m.templateSelection.String()
-	return lipgloss.NewStyle().
-		Width(80).
-		Height(perPage * 2).
-		Padding(1).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("227")).
-		BorderLeft(true).BorderTop(false).BorderRight(false).BorderBottom(false).
-		Render(srcMd)
+	return m.windowHeight - y
 }
 
 func (m *model) View() string {
-	return lipgloss.JoinHorizontal(lipgloss.Top, m.searchView(), m.displayView())
+	m.list.SetSize(m.getPaneWidth()-horizontalPadding*2, m.getPaneHeight())
+	md := m.templateSelection.String()
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithStandardStyle("notty"),
+		glamour.WithWordWrap(m.getPaneWidth()-1-horizontalPadding*4),
+	)
+	renderedMd, err := renderer.Render(md)
+	if err != nil {
+		renderedMd = md
+	}
+	return lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		lipgloss.NewStyle().
+			Width(m.getPaneWidth()).
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("227")).
+			BorderLeft(false).BorderTop(false).BorderRight(true).BorderBottom(false).
+			Render(
+				paddingStyle.Render(m.list.View()),
+			),
+		paddingStyle.Width(m.getPaneWidth()).Render(renderedMd),
+	)
 }
 
 func Program() *templates.Template {
@@ -205,5 +183,5 @@ func Program() *templates.Template {
 		_, _ = fmt.Fprintf(os.Stderr, "received unexpected model type from program: %v\n", err)
 		os.Exit(1)
 	}
-	return m.templateSelection
+	return m.templateSelection.ToTemplate()
 }

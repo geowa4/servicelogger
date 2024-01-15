@@ -50,7 +50,7 @@ func initialModel(template *templates.Template) *model {
 			Severity:      template.Severity,
 			ServiceName:   template.ServiceName,
 			Summary:       template.Summary,
-			Description:   template.Description,
+			Desc:          template.Desc,
 			InternalOnly:  template.InternalOnly,
 			EventStreamId: template.EventStreamId,
 			Tags:          append(make([]string, 0), template.Tags...),
@@ -111,7 +111,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Handle character input and blinking
 	cmd := m.updateInputs(msg)
 	summary := m.baseTemplate.Summary
-	description := m.baseTemplate.Description
+	description := m.baseTemplate.Desc
 	for i, variable := range m.variables {
 		value := m.inputs[i].Value()
 		if value == "" {
@@ -121,7 +121,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		description = strings.ReplaceAll(description, variable, value)
 	}
 	m.filledInTemplate.Summary = summary
-	m.filledInTemplate.Description = description
+	m.filledInTemplate.Desc = description
 	return m, cmd
 }
 
@@ -138,7 +138,7 @@ func (m *model) updateInputs(msg tea.Msg) tea.Cmd {
 }
 
 func (m *model) markdownView() string {
-	md, err := glamour.Render(m.filledInTemplate.String(), "dark")
+	md, err := glamour.Render(m.filledInTemplate.String(), "notty")
 	if err != nil {
 		return ""
 	}

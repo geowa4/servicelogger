@@ -20,7 +20,7 @@ var tagCmd = &cobra.Command{
 				_ = csvWriter.Write([]string{
 					template.Summary,
 					k,
-					template.Description,
+					template.Desc,
 					template.SourcePath,
 				})
 			}

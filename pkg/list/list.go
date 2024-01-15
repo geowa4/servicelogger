@@ -103,7 +103,7 @@ func initialModel(slResponse *ServiceLogResponse) *model {
 	}
 	d := list.NewDefaultDelegate()
 	l := list.New(items, d, 0, 0)
-	l.Title = "Service Logs"
+	l.Title = "Service Log List"
 	l.Styles.Title = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFDF5")).
 		Background(lipgloss.Color("#25A065")).
@@ -157,7 +157,11 @@ func (m *model) getPaneHeight() int {
 func (m *model) View() string {
 	m.list.SetSize(m.getPaneWidth()-horizontalPadding*2, m.getPaneHeight())
 	md := m.selectedServiceLog.Markdown()
-	renderedMd, err := glamour.Render(md, "notty")
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithStandardStyle("notty"),
+		glamour.WithWordWrap(m.getPaneWidth()-1-horizontalPadding*4),
+	)
+	renderedMd, err := renderer.Render(md)
 	if err != nil {
 		renderedMd = md
 	}
@@ -194,7 +198,7 @@ func Program(slResponseBytes []byte) {
 	}
 
 	if m, ok := tm.(*model); ok {
-		if md, mdErr := glamour.Render(m.selectedServiceLog.Markdown(), "dark"); mdErr == nil {
+		if md, mdErr := glamour.Render(m.selectedServiceLog.Markdown(), "notty"); mdErr == nil {
 			fmt.Println(md)
 		}
 	} else {
