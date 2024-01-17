@@ -108,6 +108,7 @@ func initialModel(slResponse *ServiceLogResponse) *model {
 		Foreground(lipgloss.Color("#FFFDF5")).
 		Background(lipgloss.Color("#25A065")).
 		Padding(0, 1)
+	l.InfiniteScrolling = true
 	return &model{
 		serviceLogs:        slResponse.ServiceLogs,
 		selectedServiceLog: slResponse.ServiceLogs[0],
