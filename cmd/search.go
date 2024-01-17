@@ -14,7 +14,8 @@ var searchCmd = &cobra.Command{
 	Short: "Search for a service log",
 	Long:  `Run an interactive TUI to search and discover service log templates`,
 	Run: func(cmd *cobra.Command, args []string) {
-		template := search.Program()
+		template, err := search.Program()
+		cobra.CheckErr(err)
 		if template != nil {
 			template = editor.Program(template)
 		}
