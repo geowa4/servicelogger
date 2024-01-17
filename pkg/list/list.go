@@ -1,15 +1,15 @@
 package list
 
 import (
-	"encoding/json"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
-	"os"
-	"time"
+	"github.com/geowa4/servicelogger/pkg/ocm"
 )
 
 type ServiceLogResponse struct {
@@ -180,32 +180,49 @@ func (m *model) View() string {
 	)
 }
 
-func Program(slResponseBytes []byte) {
-	lipgloss.SetColorProfile(termenv.TrueColor)
-
-	slResponse := ServiceLogResponse{}
-	err := json.Unmarshal(slResponseBytes, &slResponse)
+func Program(accessToken, refreshToken string) {
+	conn, err := ocm.NewConnection(accessToken, refreshToken)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "could not parse input: %v", err)
+		fmt.Fprintf(os.Stderr, "could not parse input: %v", err)
 		os.Exit(1)
 	}
-	if slResponse.Total == 0 {
-		_, _ = fmt.Fprintf(os.Stderr, "no service logs to view")
-		os.Exit(0)
-	}
-	tm, err := tea.NewProgram(initialModel(&slResponse), tea.WithOutput(os.Stderr), tea.WithAltScreen()).Run()
+	defer conn.Close()
+	client := ocm.NewClient(conn)
+	list, err := client.ListServiceLogs("", "")
 	if err != nil {
-		return
-	}
-
-	if m, ok := tm.(*model); ok {
-		if md, mdErr := glamour.Render(m.selectedServiceLog.Markdown(), "notty"); mdErr == nil {
-			fmt.Println(md)
-		}
-	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "received unexpected model type from program: %v\n", err)
+		fmt.Fprintf(os.Stderr, "could not get serviceLogs: %v", err)
 		os.Exit(1)
-		return
 	}
-
+	fmt.Println(list)
+	os.Exit(0)
 }
+
+// func Program(slResponseBytes []byte) {
+// 	lipgloss.SetColorProfile(termenv.TrueColor)
+//
+// 	slResponse := ServiceLogResponse{}
+// 	err := json.Unmarshal(slResponseBytes, &slResponse)
+// 	if err != nil {
+// 		_, _ = fmt.Fprintf(os.Stderr, "could not parse input: %v", err)
+// 		os.Exit(1)
+// 	}
+// 	if slResponse.Total == 0 {
+// 		_, _ = fmt.Fprintf(os.Stderr, "no service logs to view")
+// 		os.Exit(0)
+// 	}
+// 	tm, err := tea.NewProgram(initialModel(&slResponse), tea.WithOutput(os.Stderr), tea.WithAltScreen()).Run()
+// 	if err != nil {
+// 		return
+// 	}
+//
+// 	if m, ok := tm.(*model); ok {
+// 		if md, mdErr := glamour.Render(m.selectedServiceLog.Markdown(), "notty"); mdErr == nil {
+// 			fmt.Println(md)
+// 		}
+// 	} else {
+// 		_, _ = fmt.Fprintf(os.Stderr, "received unexpected model type from program: %v\n", err)
+// 		os.Exit(1)
+// 		return
+// 	}
+//
+// }
