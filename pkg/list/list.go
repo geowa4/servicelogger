@@ -1,6 +1,7 @@
 package list
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -21,7 +22,7 @@ func (s ServiceLogView) FilterValue() string {
 		internalOrExternal = "internal"
 	}
 	return fmt.Sprintf(
-		"%s\n%s%s\n\n%s\n%s\n%s\n%s\n%s\n%s",
+		"%s\n%s\n%s\n\n%s\n%s\n%s\n%s\n%s\n",
 		s.Title(),
 		s.Description(),
 		s.Log.CreatedBy,
@@ -62,9 +63,8 @@ var (
 )
 
 type model struct {
-	serviceLogs        []ocm.ServiceLog
-	selectedServiceLog ocm.ServiceLog
-	totalCount         int
+	serviceLogs []ocm.ServiceLog
+	totalCount  int
 
 	list list.Model
 
@@ -85,10 +85,11 @@ func initialModel(serviceLogs []ocm.ServiceLog) *model {
 		Background(lipgloss.Color("#25A065")).
 		Padding(0, 1)
 	l.InfiniteScrolling = true
+	l.KeyMap.Quit.SetKeys("enter", "q")
+	l.KeyMap.Quit.SetHelp("enter/q", "select/quit")
 	return &model{
-		serviceLogs:        serviceLogs,
-		selectedServiceLog: serviceLogs[0],
-		totalCount:         len(serviceLogs),
+		serviceLogs: serviceLogs,
+		totalCount:  len(serviceLogs),
 
 		list: l,
 	}
@@ -108,10 +109,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// This will also call our delegate's update function.
 	newListModel, cmd := m.list.Update(msg)
 	m.list = newListModel
-	item := newListModel.SelectedItem()
-	if sl, ok := item.(ServiceLogView); ok {
-		m.selectedServiceLog = sl.Log
-	}
 	return m, cmd
 }
 
@@ -133,7 +130,10 @@ func (m *model) getPaneHeight() int {
 
 func (m *model) View() string {
 	m.list.SetSize(m.getPaneWidth()-horizontalPadding*2, m.getPaneHeight())
-	md := markdown(m.selectedServiceLog)
+	md := markdown(ocm.ServiceLog{Summary: "Markdown Error"})
+	if sl, ok := m.list.SelectedItem().(ServiceLogView); ok {
+		md = markdown(sl.Log)
+	}
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithStandardStyle("notty"),
 		glamour.WithWordWrap(m.getPaneWidth()-1-horizontalPadding*4),
@@ -156,35 +156,26 @@ func (m *model) View() string {
 	)
 }
 
-func Program(accessToken, refreshToken string) {
-	conn, err := ocm.NewConnection(accessToken, refreshToken)
+func Program(servicelogs []ocm.ServiceLog) (string, error) {
+	tm, err := tea.NewProgram(initialModel(servicelogs), tea.WithOutput(os.Stderr), tea.WithAltScreen()).Run()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not parse input: %v", err)
-		os.Exit(1)
-	}
-	defer conn.Close()
-	client := ocm.NewClient(conn)
-	list, err := client.ListServiceLogs("", "")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not get serviceLogs: %v", err)
-		os.Exit(1)
-	}
-	if len(list) == 0 {
-		_, _ = fmt.Fprintf(os.Stderr, "no service logs to view")
-		os.Exit(0)
-	}
-	tm, err := tea.NewProgram(initialModel(list), tea.WithOutput(os.Stderr), tea.WithAltScreen()).Run()
-	if err != nil {
-		return
+		return "", err
 	}
 
-	if m, ok := tm.(*model); ok {
-		if md, mdErr := glamour.Render(markdown(m.selectedServiceLog), "notty"); mdErr == nil {
-			fmt.Println(md)
-		}
-	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "received unexpected model type from program: %v\n", err)
-		os.Exit(1)
-		return
+	m, ok := tm.(*model)
+	if !ok {
+		return "", errors.New("could not cast model")
 	}
+	sl, ok := m.list.SelectedItem().(ServiceLogView)
+	if !ok {
+		return "", errors.New("could not cast service log view")
+	}
+
+	md := markdown(sl.Log)
+	md, err = glamour.Render(md, "notty")
+	if err != nil {
+		return "", errors.New("could not render markdown")
+	}
+
+	return md, nil
 }

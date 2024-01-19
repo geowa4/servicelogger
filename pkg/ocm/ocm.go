@@ -10,22 +10,22 @@ import (
 )
 
 type ServiceLog struct {
-	ClusterId     string    `json:"cluster_id"`
-	ClusterUuid   string    `json:"cluster_uuid"`
-	CreatedAt     time.Time `json:"created_at"`
-	CreatedBy     string    `json:"created_by"`
-	Desc          string    `json:"description"`
-	EventStreamId string    `json:"event_stream_id"`
-	Href          string    `json:"href"`
-	Id            string    `json:"id"`
-	InternalOnly  bool      `json:"internal_only"`
-	Kind          string    `json:"kind"`
-	LogType       string    `json:"log_type"`
-	ServiceName   string    `json:"service_name"`
-	Severity      string    `json:"severity"`
-	Summary       string    `json:"summary"`
-	Timestamp     time.Time `json:"timestamp"`
-	Username      string    `json:"username"`
+	ClusterId     string
+	ClusterUuid   string
+	CreatedAt     time.Time
+	CreatedBy     string
+	Desc          string
+	EventStreamId string
+	Href          string
+	Id            string
+	InternalOnly  bool
+	Kind          string
+	LogType       string
+	ServiceName   string
+	Severity      string
+	Summary       string
+	Timestamp     time.Time
+	Username      string
 }
 
 type ocmClient struct {
@@ -44,7 +44,7 @@ func NewClient(conn *sdk.Connection) ocmClient {
 func NewConnection(accessToken, refreshToken string) (*sdk.Connection, error) {
 	connection, err := sdk.NewConnectionBuilder().Tokens(accessToken, refreshToken).Build()
 	if err != nil {
-		return &sdk.Connection{}, errors.New(fmt.Sprintf("Error building ocm sdk connection :: %s \n", err.Error()))
+		return &sdk.Connection{}, errors.New(fmt.Sprintf("error building ocm sdk connection :: %s \n", err.Error()))
 	}
 
 	return connection, nil
@@ -60,7 +60,7 @@ func (c ocmClient) ListServiceLogs(clusterID string, query ...string) ([]Service
 
 	list := []ServiceLog{}
 	page := 1
-	size := 50
+	size := 1000
 	for {
 		resp, err := c.clusterLogsClient.List().
 			ClusterID(clusterID).
