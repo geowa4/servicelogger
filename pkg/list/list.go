@@ -1,81 +1,58 @@
 package list
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
-	"os"
-	"time"
+	"github.com/geowa4/servicelogger/pkg/ocm"
 )
 
-type ServiceLogResponse struct {
-	Kind        string        `json:"kind"`
-	Page        int           `json:"page"`
-	Size        int           `json:"size"`
-	Total       int           `json:"total"`
-	ServiceLogs []*ServiceLog `json:"items"`
+type ServiceLogView struct {
+	Log ocm.ServiceLog
 }
 
-type ServiceLog struct {
-	ClusterId     string    `json:"cluster_id"`
-	ClusterUuid   string    `json:"cluster_uuid"`
-	CreatedAt     time.Time `json:"created_at"`
-	CreatedBy     string    `json:"created_by"`
-	Desc          string    `json:"description"`
-	EventStreamId string    `json:"event_stream_id"`
-	Href          string    `json:"href"`
-	Id            string    `json:"id"`
-	InternalOnly  bool      `json:"internal_only"`
-	Kind          string    `json:"kind"`
-	LogType       string    `json:"log_type"`
-	ServiceName   string    `json:"service_name"`
-	Severity      string    `json:"severity"`
-	Summary       string    `json:"summary"`
-	Timestamp     time.Time `json:"timestamp"`
-	Username      string    `json:"username"`
-}
-
-func (s *ServiceLog) FilterValue() string {
+func (s ServiceLogView) FilterValue() string {
 	internalOrExternal := "external"
-	if s.InternalOnly {
+	if s.Log.InternalOnly {
 		internalOrExternal = "internal"
 	}
 	return fmt.Sprintf(
-		"%s\n%s%s\n\n%s\n%s\n%s\n%s\n%s\n%s",
+		"%s\n%s\n%s\n\n%s\n%s\n%s\n%s\n%s\n",
 		s.Title(),
 		s.Description(),
-		s.CreatedBy,
-		s.Severity,
-		s.LogType,
+		s.Log.CreatedBy,
+		s.Log.Severity,
+		s.Log.LogType,
 		internalOrExternal,
-		s.ClusterId,
-		s.ClusterUuid)
+		s.Log.ClusterId,
+		s.Log.ClusterUuid)
 }
 
-func (s *ServiceLog) Title() string {
-	return fmt.Sprintf("%s (%s)", s.Summary, s.ServiceName)
+func (s ServiceLogView) Title() string {
+	return fmt.Sprintf("%s (%s)", s.Log.Summary, s.Log.ServiceName)
 }
 
-func (s *ServiceLog) Description() string {
-	return s.Desc
+func (s ServiceLogView) Description() string {
+	return s.Log.Desc
 }
 
-func (s *ServiceLog) Markdown() string {
-	description := s.Desc
+func markdown(log ocm.ServiceLog) string {
+	description := log.Desc
 	if description == "" {
 		description = "_empty description_"
 	}
 	return fmt.Sprintf(
 		"# [%s] %s\n\n%s\n\n_Created at %s by %s_",
-		s.ServiceName,
-		s.Summary,
+		log.ServiceName,
+		log.Summary,
 		description,
-		s.CreatedAt,
-		s.CreatedBy,
+		log.CreatedAt,
+		log.CreatedBy,
 	)
 }
 
@@ -86,9 +63,8 @@ var (
 )
 
 type model struct {
-	serviceLogs        []*ServiceLog
-	selectedServiceLog *ServiceLog
-	totalCount         int
+	serviceLogs []ocm.ServiceLog
+	totalCount  int
 
 	list list.Model
 
@@ -96,10 +72,10 @@ type model struct {
 	windowHeight int
 }
 
-func initialModel(slResponse *ServiceLogResponse) *model {
-	items := make([]list.Item, len(slResponse.ServiceLogs))
-	for i, sl := range slResponse.ServiceLogs {
-		items[i] = sl
+func initialModel(serviceLogs []ocm.ServiceLog) *model {
+	items := make([]list.Item, len(serviceLogs))
+	for i, sl := range serviceLogs {
+		items[i] = ServiceLogView{sl}
 	}
 	d := list.NewDefaultDelegate()
 	l := list.New(items, d, 0, 0)
@@ -109,10 +85,11 @@ func initialModel(slResponse *ServiceLogResponse) *model {
 		Background(lipgloss.Color("#25A065")).
 		Padding(0, 1)
 	l.InfiniteScrolling = true
+	l.KeyMap.Quit.SetKeys("enter", "q")
+	l.KeyMap.Quit.SetHelp("enter/q", "select/quit")
 	return &model{
-		serviceLogs:        slResponse.ServiceLogs,
-		selectedServiceLog: slResponse.ServiceLogs[0],
-		totalCount:         slResponse.Total,
+		serviceLogs: serviceLogs,
+		totalCount:  len(serviceLogs),
 
 		list: l,
 	}
@@ -132,10 +109,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// This will also call our delegate's update function.
 	newListModel, cmd := m.list.Update(msg)
 	m.list = newListModel
-	item := newListModel.SelectedItem()
-	if sl, ok := item.(*ServiceLog); ok {
-		m.selectedServiceLog = sl
-	}
 	return m, cmd
 }
 
@@ -157,7 +130,10 @@ func (m *model) getPaneHeight() int {
 
 func (m *model) View() string {
 	m.list.SetSize(m.getPaneWidth()-horizontalPadding*2, m.getPaneHeight())
-	md := m.selectedServiceLog.Markdown()
+	md := markdown(ocm.ServiceLog{Summary: "Markdown Error"})
+	if sl, ok := m.list.SelectedItem().(ServiceLogView); ok {
+		md = markdown(sl.Log)
+	}
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithStandardStyle("notty"),
 		glamour.WithWordWrap(m.getPaneWidth()-1-horizontalPadding*4),
@@ -180,32 +156,26 @@ func (m *model) View() string {
 	)
 }
 
-func Program(slResponseBytes []byte) {
-	lipgloss.SetColorProfile(termenv.TrueColor)
-
-	slResponse := ServiceLogResponse{}
-	err := json.Unmarshal(slResponseBytes, &slResponse)
+func Program(servicelogs []ocm.ServiceLog) (string, error) {
+	tm, err := tea.NewProgram(initialModel(servicelogs), tea.WithOutput(os.Stderr), tea.WithAltScreen()).Run()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "could not parse input: %v", err)
-		os.Exit(1)
+		return "", err
 	}
-	if slResponse.Total == 0 {
-		_, _ = fmt.Fprintf(os.Stderr, "no service logs to view")
-		os.Exit(0)
+
+	m, ok := tm.(*model)
+	if !ok {
+		return "", errors.New("could not cast model")
 	}
-	tm, err := tea.NewProgram(initialModel(&slResponse), tea.WithOutput(os.Stderr), tea.WithAltScreen()).Run()
+	sl, ok := m.list.SelectedItem().(ServiceLogView)
+	if !ok {
+		return "", errors.New("could not cast service log view")
+	}
+
+	md := markdown(sl.Log)
+	md, err = glamour.Render(md, "notty")
 	if err != nil {
-		return
+		return "", errors.New("could not render markdown")
 	}
 
-	if m, ok := tm.(*model); ok {
-		if md, mdErr := glamour.Render(m.selectedServiceLog.Markdown(), "notty"); mdErr == nil {
-			fmt.Println(md)
-		}
-	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "received unexpected model type from program: %v\n", err)
-		os.Exit(1)
-		return
-	}
-
+	return md, nil
 }
