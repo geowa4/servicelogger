@@ -65,7 +65,12 @@ func FailedConfirmation() tea.Msg {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmdBatch := make([]tea.Cmd, 0, 1)
-	switch msg.(type) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
+		}
 	case FailedConfirmationMsg:
 		m.createNewForms()
 		cmdBatch = append(cmdBatch, m.inputForm.Init(), m.confirmForm.Init())

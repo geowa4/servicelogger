@@ -1,7 +1,6 @@
 package ocm
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	clv1 "github.com/openshift-online/ocm-sdk-go/servicelogs/v1"
 )
 
+// ServiceLog is what is received from OCM
 type ServiceLog struct {
 	ClusterId     string
 	ClusterUuid   string
@@ -28,29 +28,63 @@ type ServiceLog struct {
 	Username      string
 }
 
-type ocmClient struct {
+type Client struct {
 	// conn sdk.Connection undecided if necessary here or not
 	// Ocm Cluster Client
 	// clusterClient *cm v1.ClustersClient
-	clusterLogsClient *clv1.ClustersClusterLogsClient
+	clusterLogsClient    *clv1.ClustersClusterLogsClient
+	clusterLogsAddClient *clv1.ClusterLogsClient
 }
 
-// Not sure if I want this to be part of the ocmClient Struct yet.
+// NewClient Not sure if I want this to be part of the ocmClient Struct yet.
 // Any ways it needs to be exposed to the user for them to close the connection
-func NewClient(conn *sdk.Connection) ocmClient {
-	return ocmClient{conn.ServiceLogs().V1().Clusters().ClusterLogs()}
+func NewClient(conn *sdk.Connection) Client {
+	return Client{
+		clusterLogsClient:    conn.ServiceLogs().V1().Clusters().ClusterLogs(),
+		clusterLogsAddClient: conn.ServiceLogs().V1().ClusterLogs(),
+	}
 }
 
-func NewConnection(accessToken, refreshToken string) (*sdk.Connection, error) {
-	connection, err := sdk.NewConnectionBuilder().Tokens(accessToken, refreshToken).Build()
+func NewConnectionWithTemporaryToken(url, token string) (*sdk.Connection, error) {
+	connection, err := sdk.NewConnectionBuilder().URL(url).Tokens(token).Build()
 	if err != nil {
-		return &sdk.Connection{}, errors.New(fmt.Sprintf("error building ocm sdk connection :: %s \n", err.Error()))
+		return nil, fmt.Errorf("error building ocm sdk connection :: %q \n", err)
 	}
 
 	return connection, nil
 }
 
-func (c ocmClient) ListServiceLogs(clusterID string, query ...string) ([]ServiceLog, error) {
+func NewConnection(accessToken, refreshToken string) (*sdk.Connection, error) {
+	connection, err := sdk.NewConnectionBuilder().Tokens(accessToken, refreshToken).Build()
+	if err != nil {
+		return nil, fmt.Errorf("error building ocm sdk connection :: %q \n", err)
+	}
+
+	return connection, nil
+}
+
+func (c Client) PostInternalServiceLog(clusterId string, description string) error {
+	logEntry, err := clv1.NewLogEntry().
+		InternalOnly(true).
+		ClusterID(clusterId).
+		Severity("Info").
+		ServiceName("SREManualAction").
+		Summary("INTERNAL ONLY, DO NOT SHARE WITH CUSTOMER").
+		Description(description).
+		Build()
+	if err != nil {
+		return err
+	}
+	clusterLogsAddResponse, err := c.clusterLogsAddClient.Add().Body(logEntry).Send()
+	if err != nil {
+		return err
+	} else if clusterLogsAddResponse.Status() != 201 {
+		return fmt.Errorf("expected 201 when adding service log but got %d", clusterLogsAddResponse.Status())
+	}
+	return nil
+}
+
+func (c Client) ListServiceLogs(clusterID string, query ...string) ([]ServiceLog, error) {
 	queryString := ""
 	for i, s := range query {
 		if i != 0 {
@@ -58,7 +92,7 @@ func (c ocmClient) ListServiceLogs(clusterID string, query ...string) ([]Service
 		}
 	}
 
-	list := []ServiceLog{}
+	list := make([]ServiceLog, 0)
 	page := 1
 	size := 1000
 	for {
