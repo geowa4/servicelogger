@@ -2,10 +2,14 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/geowa4/servicelogger/pkg/internalservicelog"
+	"github.com/geowa4/servicelogger/pkg/ocm"
+	sdk "github.com/openshift-online/ocm-sdk-go"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"os"
 	"time"
 )
@@ -13,27 +17,65 @@ import (
 var internalServiceLogCmd = &cobra.Command{
 	Use:   "internal",
 	Short: "Send an internal service log",
-	Long: `Prompt for internal service log 
+	Long: `Prompt for and send internal service log 
 
-` + "Example: `servicelogger internal`",
+` + "Example: `servicelogger internal -u 'https://api.openshift.com' -t \"$(ocm token)\" -c $CLUSTER_ID`",
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		cobra.CheckErr(validateArgs())
 		desc, confirmation, err := internalservicelog.Program()
 		cobra.CheckErr(err)
-		fmt.Println(desc)
 		if confirmation {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			var errSendSL error
 			go func() {
 				defer cancel()
-				// TODO send SL
-				time.Sleep(3 * time.Second)
+				errSendSL = sendServiceLog(
+					viper.GetString("ocm_url"),
+					viper.GetString("ocm_token"),
+					viper.GetString("cluster_id"), desc)
 			}()
-			err = spinner.New().Context(ctx).Run()
+			err = spinner.New().Title("Sending service log").Context(ctx).Run()
+			cobra.CheckErr(errSendSL)
 			cobra.CheckErr(err)
-			_, _ = fmt.Fprint(os.Stderr, "service log sent")
+			_, _ = fmt.Fprint(os.Stderr, "Service log sent")
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(internalServiceLogCmd)
+
+	internalServiceLogCmd.Flags().StringP("ocm-url", "u", "https://api.openshift.com", "OCM URL (falls back to $OCM_URL and then 'https://api.openshift.com')")
+	_ = viper.BindPFlag("ocm_url", internalServiceLogCmd.Flags().Lookup("ocm-url"))
+	internalServiceLogCmd.Flags().StringP("ocm-token", "t", "", "OCM token (falls back to $OCM_TOKEN)")
+	_ = viper.BindPFlag("ocm_token", internalServiceLogCmd.Flags().Lookup("ocm-token"))
+	internalServiceLogCmd.Flags().StringP("cluster-id", "c", "", "internal cluster ID (defaults to $CLUSTER_ID)")
+	_ = viper.BindPFlag("cluster_id", internalServiceLogCmd.Flags().Lookup("cluster-id"))
+}
+
+func validateArgs() error {
+	if viper.GetString("ocm_url") == "" {
+		return errors.New("argument --ocm-url or environment variable $OCM_URL not set")
+	}
+	if viper.GetString("ocm_token") == "" {
+		return errors.New("argument --token or environment variable $OCM_TOKEN not set")
+	}
+	if viper.GetString("cluster_id") == "" {
+		return errors.New("argument --cluster-id or environment variable $CLUSTER_ID not set")
+	}
+	return nil
+}
+
+func sendServiceLog(url, token, clusterId, description string) error {
+	conn, err := ocm.NewConnectionWithTemporaryToken(url, token)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "error creating ocm connection: %q", err)
+	}
+	defer func(conn *sdk.Connection) {
+		_ = conn.Close()
+	}(conn)
+	client := ocm.NewClient(conn)
+	err = client.PostInternalServiceLog(clusterId, description)
+	return err
 }
