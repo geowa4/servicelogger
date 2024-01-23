@@ -1,7 +1,6 @@
 package search
 
 import (
-	"encoding/json"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -20,18 +19,6 @@ type Model struct {
 
 func NewModel() *Model {
 	allTemplates := make([]*ListableTemplate, 0)
-	internalTemplate := &ListableTemplate{}
-	internalTemplate.SourcePath = ""
-	err := json.Unmarshal([]byte(`{
-			"severity": "Info",
-			"service_name": "SREManualAction",
-			"summary": "INTERNAL ONLY, DO NOT SHARE WITH CUSTOMER",
-			"description": "${MESSAGE}",
-			"internal_only": true
-		}`), internalTemplate)
-	if err == nil {
-		allTemplates = append(allTemplates, internalTemplate)
-	}
 	templates.WalkTemplates(func(template *templates.Template) {
 		allTemplates = append(allTemplates, NewListableTemplate(template))
 	})
