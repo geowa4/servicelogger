@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/geowa4/servicelogger/pkg/internalservicelog"
@@ -22,7 +21,7 @@ var internalServiceLogCmd = &cobra.Command{
 ` + "Example: `servicelogger internal -u 'https://api.openshift.com' -t \"$(ocm token)\" -c $CLUSTER_ID`",
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		cobra.CheckErr(validateArgs())
+		cobra.CheckErr(checkRequiredStringArgs("ocm_url", "ocm_token", "cluster_id"))
 		desc, confirmation, err := internalservicelog.Program()
 		cobra.CheckErr(err)
 		if confirmation {
@@ -44,27 +43,14 @@ var internalServiceLogCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(internalServiceLogCmd)
-
 	internalServiceLogCmd.Flags().StringP("ocm-url", "u", "https://api.openshift.com", "OCM URL (falls back to $OCM_URL and then 'https://api.openshift.com')")
 	_ = viper.BindPFlag("ocm_url", internalServiceLogCmd.Flags().Lookup("ocm-url"))
 	internalServiceLogCmd.Flags().StringP("ocm-token", "t", "", "OCM token (falls back to $OCM_TOKEN)")
 	_ = viper.BindPFlag("ocm_token", internalServiceLogCmd.Flags().Lookup("ocm-token"))
 	internalServiceLogCmd.Flags().StringP("cluster-id", "c", "", "internal cluster ID (defaults to $CLUSTER_ID)")
 	_ = viper.BindPFlag("cluster_id", internalServiceLogCmd.Flags().Lookup("cluster-id"))
-}
 
-func validateArgs() error {
-	if viper.GetString("ocm_url") == "" {
-		return errors.New("argument --ocm-url or environment variable $OCM_URL not set")
-	}
-	if viper.GetString("ocm_token") == "" {
-		return errors.New("argument --token or environment variable $OCM_TOKEN not set")
-	}
-	if viper.GetString("cluster_id") == "" {
-		return errors.New("argument --cluster-id or environment variable $CLUSTER_ID not set")
-	}
-	return nil
+	rootCmd.AddCommand(internalServiceLogCmd)
 }
 
 func sendServiceLog(url, token, clusterId, description string) error {

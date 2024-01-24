@@ -6,6 +6,7 @@ import (
 	"github.com/geowa4/servicelogger/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 var cfgFile string
@@ -53,4 +54,26 @@ func initConfig() {
 			cobra.CheckErr(fmt.Errorf("bad config file (%s): %q", viper.ConfigFileUsed(), err))
 		}
 	}
+}
+
+func checkRequiredStringArgs(args ...string) error {
+	for _, arg := range args {
+		if viper.GetString(arg) == "" {
+			return fmt.Errorf(
+				"argument --%s or environmnet variable %s not set",
+				arg,
+				strings.ToUpper(arg),
+			)
+		}
+	}
+	if viper.GetString("ocm_url") == "" {
+		return errors.New("argument --ocm-url or environment variable $OCM_URL not set")
+	}
+	if viper.GetString("ocm_token") == "" {
+		return errors.New("argument --token or environment variable $OCM_TOKEN not set")
+	}
+	if viper.GetString("cluster_id") == "" {
+		return errors.New("argument --cluster-id or environment variable $CLUSTER_ID not set")
+	}
+	return nil
 }
