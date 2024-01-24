@@ -54,15 +54,6 @@ func NewConnectionWithTemporaryToken(url, token string) (*sdk.Connection, error)
 	return connection, nil
 }
 
-func NewConnection(accessToken, refreshToken string) (*sdk.Connection, error) {
-	connection, err := sdk.NewConnectionBuilder().Tokens(accessToken, refreshToken).Build()
-	if err != nil {
-		return nil, fmt.Errorf("error building ocm sdk connection :: %q \n", err)
-	}
-
-	return connection, nil
-}
-
 func (c Client) PostInternalServiceLog(clusterId string, description string) error {
 	logEntry, err := clv1.NewLogEntry().
 		InternalOnly(true).
