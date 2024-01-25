@@ -2,6 +2,7 @@ package ocm
 
 import (
 	"fmt"
+	"github.com/geowa4/servicelogger/pkg/templates"
 	"time"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
@@ -54,6 +55,32 @@ func NewConnectionWithTemporaryToken(url, token string) (*sdk.Connection, error)
 	return connection, nil
 }
 
+func (c Client) postServiceLog(logEntry *clv1.LogEntry) error {
+	clusterLogsAddResponse, err := c.clusterLogsAddClient.Add().Body(logEntry).Send()
+	if err != nil {
+		return err
+	} else if clusterLogsAddResponse.Status() != 201 {
+		return fmt.Errorf("expected 201 when adding service log but got %d", clusterLogsAddResponse.Status())
+	}
+	return nil
+}
+
+func (c Client) PostServiceLog(clusterId string, template templates.Template) error {
+	logEntry, err := clv1.NewLogEntry().
+		ClusterID(clusterId).
+		Severity(clv1.Severity(template.Severity)).
+		ServiceName(template.ServiceName).
+		Summary(template.Summary).
+		Description(template.Desc).
+		InternalOnly(template.InternalOnly).
+		EventStreamID(template.EventStreamId).
+		Build()
+	if err != nil {
+		return err
+	}
+	return c.postServiceLog(logEntry)
+}
+
 func (c Client) PostInternalServiceLog(clusterId string, description string) error {
 	logEntry, err := clv1.NewLogEntry().
 		InternalOnly(true).
@@ -66,13 +93,7 @@ func (c Client) PostInternalServiceLog(clusterId string, description string) err
 	if err != nil {
 		return err
 	}
-	clusterLogsAddResponse, err := c.clusterLogsAddClient.Add().Body(logEntry).Send()
-	if err != nil {
-		return err
-	} else if clusterLogsAddResponse.Status() != 201 {
-		return fmt.Errorf("expected 201 when adding service log but got %d", clusterLogsAddResponse.Status())
-	}
-	return nil
+	return c.postServiceLog(logEntry)
 }
 
 func (c Client) ListServiceLogs(clusterID string, query ...string) ([]ServiceLog, error) {
