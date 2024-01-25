@@ -1,8 +1,8 @@
 package search
 
 import (
-	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/geowa4/servicelogger/pkg/teaspoon"
 )
 
 var (
@@ -30,14 +30,7 @@ func (m *Model) getPaneHeight() int {
 func (m *Model) View() string {
 	m.list.SetSize(m.getPaneWidth()-horizontalPadding*2, m.getPaneHeight())
 	md := m.templateSelection.String()
-	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStandardStyle("notty"),
-		glamour.WithWordWrap(m.getPaneWidth()-1-horizontalPadding*4),
-	)
-	renderedMd, err := renderer.Render(md)
-	if err != nil {
-		renderedMd = md
-	}
+	renderedMd := teaspoon.RenderMarkdownWithWordWrap(md, m.getPaneWidth()-1-horizontalPadding*4)
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		lipgloss.NewStyle().

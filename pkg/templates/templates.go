@@ -19,10 +19,6 @@ var (
 	templateVarRegexp = regexp.MustCompile("\\$\\{[A-Z0-9_]+}")
 )
 
-func GetTemplateVarRegexp() *regexp.Regexp {
-	return templateVarRegexp
-}
-
 type Template struct {
 	Severity      string   `json:"severity"`
 	ServiceName   string   `json:"service_name"`

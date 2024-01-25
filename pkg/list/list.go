@@ -3,6 +3,7 @@ package list
 import (
 	"errors"
 	"fmt"
+	"github.com/geowa4/servicelogger/pkg/teaspoon"
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -134,14 +135,7 @@ func (m *model) View() string {
 	if sl, ok := m.list.SelectedItem().(ServiceLogView); ok {
 		md = markdown(sl.Log)
 	}
-	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStandardStyle("notty"),
-		glamour.WithWordWrap(m.getPaneWidth()-1-horizontalPadding*4),
-	)
-	renderedMd, err := renderer.Render(md)
-	if err != nil {
-		renderedMd = md
-	}
+	renderedMd := teaspoon.RenderMarkdownWithWordWrap(md, m.getPaneWidth()-1-horizontalPadding*4)
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		lipgloss.NewStyle().

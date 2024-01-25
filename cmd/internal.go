@@ -29,10 +29,11 @@ var internalServiceLogCmd = &cobra.Command{
 			var errSendSL error
 			go func() {
 				defer cancel()
-				errSendSL = sendServiceLog(
+				errSendSL = sendInternalServiceLog(
 					viper.GetString("ocm_url"),
 					viper.GetString("ocm_token"),
-					viper.GetString("cluster_id"), desc)
+					viper.GetString("cluster_id"),
+					desc)
 			}()
 			err = spinner.New().Title("Sending service log").Context(ctx).Run()
 			cobra.CheckErr(errSendSL)
@@ -53,7 +54,7 @@ func init() {
 	rootCmd.AddCommand(internalServiceLogCmd)
 }
 
-func sendServiceLog(url, token, clusterId, description string) error {
+func sendInternalServiceLog(url, token, clusterId, description string) error {
 	conn, err := ocm.NewConnectionWithTemporaryToken(url, token)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error creating ocm connection: %q", err)
