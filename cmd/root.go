@@ -66,14 +66,5 @@ func checkRequiredStringArgs(args ...string) error {
 			)
 		}
 	}
-	if viper.GetString("ocm_url") == "" {
-		return errors.New("argument --ocm-url or environment variable $OCM_URL not set")
-	}
-	if viper.GetString("ocm_token") == "" {
-		return errors.New("argument --token or environment variable $OCM_TOKEN not set")
-	}
-	if viper.GetString("cluster_id") == "" {
-		return errors.New("argument --cluster-id or environment variable $CLUSTER_ID not set")
-	}
 	return nil
 }
