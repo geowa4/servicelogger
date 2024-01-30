@@ -47,14 +47,22 @@ func markdown(log ocm.ServiceLog) string {
 	if description == "" {
 		description = "_empty description_"
 	}
-	return fmt.Sprintf(
-		"# [%s] %s\n\n%s\n\n_Created at %s by %s_",
-		log.ServiceName,
+
+	serviceName := log.ServiceName
+	if log.InternalOnly {
+		serviceName += " - INTERNAL"
+	}
+
+	md := fmt.Sprintf(
+		"# %s\n\n%s\n\n_Created at %s by %s_\n\n_Service: %s_",
 		log.Summary,
 		description,
 		log.CreatedAt,
 		log.CreatedBy,
+		serviceName,
 	)
+
+	return md
 }
 
 var (
