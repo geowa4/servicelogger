@@ -3,6 +3,7 @@ package ocm
 import (
 	"fmt"
 	"github.com/geowa4/servicelogger/pkg/templates"
+	"strings"
 	"time"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
@@ -97,12 +98,7 @@ func (c Client) PostInternalServiceLog(clusterId string, description string) err
 }
 
 func (c Client) ListServiceLogs(clusterID string, query ...string) ([]ServiceLog, error) {
-	queryString := ""
-	for i, s := range query {
-		if i != 0 {
-			queryString += fmt.Sprintf(" and %s", s)
-		}
-	}
+	queryString := strings.Join(query, " and ")
 
 	list := make([]ServiceLog, 0)
 	page := 1

@@ -47,7 +47,19 @@ var (
 					_ = conn.Close()
 				}(conn)
 				client := ocm.NewClient(conn)
-				serviceLogList, err = client.ListServiceLogs(viper.GetString("cluster_id"), "")
+
+				var queryStrings []string
+				internalFlag, _ := cmd.Flags().GetBool("internal-only")
+				if internalFlag {
+					queryStrings = append(queryStrings, "internal_only='true'")
+				}
+				allFlag, _ := cmd.Flags().GetBool("all")
+				if !allFlag {
+					queryStrings = append(queryStrings, "service_name='SREManualAction'")
+				}
+
+				serviceLogList, err = client.ListServiceLogs(viper.GetString("cluster_id"), queryStrings...)
+
 				if err != nil {
 					routineErr = fmt.Errorf("could not get serviceLogs: %v\n", err)
 					return
@@ -84,6 +96,10 @@ func init() {
 	listCmd.Flags().StringP("ocm-url", "u", "https://api.openshift.com", "OCM URL (falls back to $OCM_URL and then 'https://api.openshift.com')")
 	listCmd.Flags().StringP("ocm-token", "t", "", "OCM token (falls back to $OCM_TOKEN)")
 	listCmd.Flags().StringP("cluster-id", "c", "", "internal cluster ID (defaults to $CLUSTER_ID)")
+	listCmd.Flags().BoolP("all", "a", false, "Whether to return all service logs. By default, results are filtered on service_name='SREManualAction'")
+	listCmd.Flags().BoolP("internal-only", "i", false, "Whether to only return internal service logs.")
+
+	listCmd.MarkFlagsMutuallyExclusive("all", "internal-only")
 
 	rootCmd.AddCommand(listCmd)
 }
