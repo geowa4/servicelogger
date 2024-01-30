@@ -24,6 +24,11 @@ var sendServiceLogCmd = &cobra.Command{
 
 ` + "Example: `servicelogger search | servicelogger send -u 'https://api.openshift.com' -t \"$(ocm token)\" -c $CLUSTER_ID`",
 	Args: cobra.NoArgs,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		_ = viper.BindPFlag("ocm_url", cmd.Flags().Lookup("ocm-url"))
+		_ = viper.BindPFlag("ocm_token", cmd.Flags().Lookup("ocm-token"))
+		_ = viper.BindPFlag("cluster_id", cmd.Flags().Lookup("cluster-id"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cobra.CheckErr(checkRequiredStringArgs("ocm_url", "ocm_token", "cluster_id"))
 
@@ -63,11 +68,8 @@ var sendServiceLogCmd = &cobra.Command{
 
 func init() {
 	sendServiceLogCmd.Flags().StringP("ocm-url", "u", "https://api.openshift.com", "OCM URL (falls back to $OCM_URL and then 'https://api.openshift.com')")
-	_ = viper.BindPFlag("ocm_url", sendServiceLogCmd.Flags().Lookup("ocm-url"))
 	sendServiceLogCmd.Flags().StringP("ocm-token", "t", "", "OCM token (falls back to $OCM_TOKEN)")
-	_ = viper.BindPFlag("ocm_token", sendServiceLogCmd.Flags().Lookup("ocm-token"))
 	sendServiceLogCmd.Flags().StringP("cluster-id", "c", "", "internal cluster ID (defaults to $CLUSTER_ID)")
-	_ = viper.BindPFlag("cluster_id", sendServiceLogCmd.Flags().Lookup("cluster-id"))
 
 	rootCmd.AddCommand(sendServiceLogCmd)
 }

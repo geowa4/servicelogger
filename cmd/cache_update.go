@@ -12,7 +12,7 @@ var cacheUpdateCmd = &cobra.Command{
 	Short: "Initialize or update the cached service log templates",
 	Long:  `Downloads the latest templates from openshift/managed-notifications into a local cache directory`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		bindViper(cmd)
+		_ = viper.BindPFlag("cache_directory", cmd.Flags().Lookup("directory"))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		templates.CacheManagedNotifications()
@@ -25,8 +25,4 @@ func init() {
 	cacheDir, err := config.GetDefaultCacheDir()
 	cobra.CheckErr(err)
 	cacheUpdateCmd.Flags().StringP("directory", "d", cacheDir, "Cache directory root")
-}
-
-func bindViper(cmd *cobra.Command) {
-	_ = viper.BindPFlag("cache_directory", cmd.Flags().Lookup("directory"))
 }

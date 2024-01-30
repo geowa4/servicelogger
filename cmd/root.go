@@ -60,8 +60,8 @@ func checkRequiredStringArgs(args ...string) error {
 	for _, arg := range args {
 		if viper.GetString(arg) == "" {
 			return fmt.Errorf(
-				"argument --%s or environmnet variable %s not set",
-				arg,
+				"argument --%s or environment variable %s not set",
+				strings.ReplaceAll(arg, "_", "-"),
 				strings.ToUpper(arg),
 			)
 		}
