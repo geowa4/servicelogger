@@ -22,6 +22,12 @@ var (
 		Long: `Display a filterable list of service logs
 
 ` + "Example: `osdctl servicelog list $CLUSTER_ID | servicelogger list`",
+		Args: cobra.NoArgs,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			_ = viper.BindPFlag("ocm_url", cmd.Flags().Lookup("ocm-url"))
+			_ = viper.BindPFlag("ocm_token", cmd.Flags().Lookup("ocm-token"))
+			_ = viper.BindPFlag("cluster_id", cmd.Flags().Lookup("cluster-id"))
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cobra.CheckErr(checkRequiredStringArgs("ocm_url", "ocm_token", "cluster_id"))
 			serviceLogList := make([]ocm.ServiceLog, 0)
@@ -75,11 +81,9 @@ var (
 )
 
 func init() {
-	_ = viper.BindPFlag("ocm_url", listCmd.Flags().Lookup("ocm-url"))
+	listCmd.Flags().StringP("ocm-url", "u", "https://api.openshift.com", "OCM URL (falls back to $OCM_URL and then 'https://api.openshift.com')")
 	listCmd.Flags().StringP("ocm-token", "t", "", "OCM token (falls back to $OCM_TOKEN)")
-	_ = viper.BindPFlag("ocm_token", listCmd.Flags().Lookup("ocm-token"))
 	listCmd.Flags().StringP("cluster-id", "c", "", "internal cluster ID (defaults to $CLUSTER_ID)")
-	_ = viper.BindPFlag("cluster_id", listCmd.Flags().Lookup("cluster-id"))
 
 	rootCmd.AddCommand(listCmd)
 }
