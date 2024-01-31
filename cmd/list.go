@@ -29,7 +29,7 @@ var (
 			_ = viper.BindPFlag("cluster_id", cmd.Flags().Lookup("cluster-id"))
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			cobra.CheckErr(checkRequiredStringArgs("ocm_url", "ocm_token", "cluster_id"))
+			cobra.CheckErr(checkRequiredArgsExist("ocm_url", "ocm_token", "cluster_id"))
 			serviceLogList := make([]ocm.ServiceLog, 0)
 			var routineErr error
 			ctx, cancel := context.WithCancel(context.Background())

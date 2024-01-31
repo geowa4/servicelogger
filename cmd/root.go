@@ -56,9 +56,9 @@ func initConfig() {
 	}
 }
 
-func checkRequiredStringArgs(args ...string) error {
+func checkRequiredArgsExist(args ...string) error {
 	for _, arg := range args {
-		if viper.GetString(arg) == "" {
+		if !viper.IsSet(arg) {
 			return fmt.Errorf(
 				"argument --%s or environment variable %s not set",
 				strings.ReplaceAll(arg, "_", "-"),
