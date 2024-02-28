@@ -33,13 +33,30 @@ type Template struct {
 }
 
 func (t *Template) String() string {
-	md := fmt.Sprintf(
+	// Main body
+	mainBody := fmt.Sprintf(
 		"# %s\n\n%s",
 		t.Summary,
 		t.Desc,
 	)
+
+	// Extended, optional fields
+	var extendedFields strings.Builder
 	if len(t.Tags) > 0 {
-		md += fmt.Sprintf("\n\n_Tags_: %s", strings.Join(t.Tags, ", "))
+		extendedFields.WriteString(fmt.Sprintf("\n\n_Tags_: %s", strings.Join(t.Tags, ", ")))
+	}
+	if t.LogType != "" {
+		extendedFields.WriteString(fmt.Sprintf("\n\n_Log Type_: %s", t.LogType))
+	}
+	if t.EventStreamId != "" {
+		extendedFields.WriteString(fmt.Sprintf("\n\n_Event Stream ID_: %s", t.EventStreamId))
+	}
+	if len(t.DocReferences) > 0 {
+		extendedFields.WriteString(fmt.Sprintf("\n\n_Doc Refs_: %s", strings.Join(t.DocReferences, ", ")))
+	}
+	md := mainBody
+	if extendedFields.Len() > 0 {
+		md += extendedFields.String()
 	}
 	return md
 }
@@ -47,8 +64,9 @@ func (t *Template) String() string {
 func (t *Template) GetVariables() []string {
 	summaryMatches := templateVarRegexp.FindAllString(t.Summary, -1)
 	descriptionMatches := templateVarRegexp.FindAllString(t.Desc, -1)
+	eventStreamMatches := templateVarRegexp.FindAllString(t.EventStreamId, -1)
 	allMatches := make([]string, 0)
-	for _, match := range append(summaryMatches, descriptionMatches...) {
+	for _, match := range append(summaryMatches, append(descriptionMatches, eventStreamMatches...)...) {
 		if !slices.Contains(allMatches, match) {
 			allMatches = append(allMatches, match)
 		}
