@@ -14,8 +14,10 @@ func NewListableTemplate(template *templates.Template) *ListableTemplate {
 	lt.ServiceName = template.ServiceName
 	lt.Summary = template.Summary
 	lt.Desc = template.Desc
+	lt.LogType = template.LogType
 	lt.InternalOnly = template.InternalOnly
 	lt.EventStreamId = template.EventStreamId
+	lt.DocReferences = template.DocReferences
 	lt.Tags = template.Tags
 	lt.SourcePath = template.SourcePath
 	return lt
@@ -27,8 +29,10 @@ func (t *ListableTemplate) ToTemplate() *templates.Template {
 		ServiceName:   t.ServiceName,
 		Summary:       t.Summary,
 		Desc:          t.Desc,
+		LogType:       t.LogType,
 		InternalOnly:  t.InternalOnly,
 		EventStreamId: t.EventStreamId,
+		DocReferences: t.DocReferences,
 		Tags:          t.Tags,
 		SourcePath:    t.SourcePath,
 	}

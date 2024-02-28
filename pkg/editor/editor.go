@@ -51,8 +51,10 @@ func initialModel(template *templates.Template) *model {
 			ServiceName:   template.ServiceName,
 			Summary:       template.Summary,
 			Desc:          template.Desc,
+			LogType:       template.LogType,
 			InternalOnly:  template.InternalOnly,
 			EventStreamId: template.EventStreamId,
+			DocReferences: template.DocReferences,
 			Tags:          append(make([]string, 0), template.Tags...),
 			SourcePath:    template.SourcePath,
 		},
@@ -112,6 +114,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := m.updateInputs(msg)
 	summary := m.baseTemplate.Summary
 	description := m.baseTemplate.Desc
+	eventStreamId := m.baseTemplate.EventStreamId
 	for i, variable := range m.variables {
 		value := m.inputs[i].Value()
 		if value == "" {
@@ -119,9 +122,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		summary = strings.ReplaceAll(summary, variable, value)
 		description = strings.ReplaceAll(description, variable, value)
+		eventStreamId = strings.ReplaceAll(eventStreamId, variable, value)
 	}
 	m.filledInTemplate.Summary = summary
 	m.filledInTemplate.Desc = description
+	m.filledInTemplate.EventStreamId = eventStreamId
 	return m, cmd
 }
 
