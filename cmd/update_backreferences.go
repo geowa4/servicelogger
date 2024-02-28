@@ -22,22 +22,27 @@ var updateBackRefsCmd = &cobra.Command{
 		templates.WalkTemplates(func(template *templates.Template) {
 			referencingSOPs := slToReferencingSOP[template.SourcePath]
 			newTags := make([]string, 0)
+
+			// Add all non-sop tags to `newTags`
 			for _, tag := range template.Tags {
-				// Seed with non-sop tags
 				if !strings.HasPrefix(tag, sopPrefix) {
 					newTags = append(newTags, tag)
 				}
 			}
+
+			// Ensure current references are tagged
 			for _, sop := range referencingSOPs {
-				// Ensure current references are tagged
 				if !slices.Contains(newTags, sopPrefix+sop) {
 					newTags = append(newTags, sopPrefix+sop)
 				}
 			}
-			template.Tags = newTags
-			templateJson, _ := json.MarshalIndent(template, "", "  ")
-			_ = os.WriteFile(filepath.Join(templates.GetServiceLogTemplatesDir(), template.SourcePath), templateJson, 0644)
-			log.Info("updated service log template", "file", filepath.Join(templates.GetServiceLogTemplatesDir(), template.SourcePath))
+
+			if !slices.Equal(newTags, template.Tags) {
+				template.Tags = newTags
+				templateJson, _ := json.MarshalIndent(template, "", "  ")
+				_ = os.WriteFile(filepath.Join(templates.GetServiceLogTemplatesDir(), template.SourcePath), templateJson, 0644)
+				log.Info("updated service log template", "file", filepath.Join(templates.GetServiceLogTemplatesDir(), template.SourcePath))
+			}
 		})
 	},
 }
