@@ -22,10 +22,12 @@ var (
 type Template struct {
 	Severity      string   `json:"severity"`
 	ServiceName   string   `json:"service_name"`
+	LogType       string   `json:"log_type,omitempty"`
 	Summary       string   `json:"summary"`
 	Desc          string   `json:"description"`
 	InternalOnly  bool     `json:"internal_only"`
 	EventStreamId string   `json:"event_stream_id,omitempty"`
+	DocReferences []string `json:"doc_references,omitempty"`
 	Tags          []string `json:"_tags,omitempty"`
 	SourcePath    string   `json:"-"`
 }
