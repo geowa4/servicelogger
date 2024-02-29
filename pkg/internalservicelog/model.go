@@ -10,10 +10,8 @@ import (
 )
 
 type model struct {
-	windowWidth  int
-	windowHeight int
-	inputForm    *huh.Form
-	confirmForm  *huh.Form
+	inputForm   *huh.Form
+	confirmForm *huh.Form
 
 	slSummary    string
 	slBody       string

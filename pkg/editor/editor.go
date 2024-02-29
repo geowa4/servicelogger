@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -26,7 +25,6 @@ type model struct {
 	variables        []string
 	inputs           []textinput.Model
 	focusIndex       int
-	cursorMode       cursor.Mode
 }
 
 func initialModel(template *templates.Template) *model {

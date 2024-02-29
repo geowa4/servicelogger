@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	templateVarRegexp = regexp.MustCompile("\\$\\{[A-Z0-9_]+}")
+	templateVarRegexp = regexp.MustCompile(`\$\{[A-Z0-9_]+}`)
 )
 
 type Template struct {
