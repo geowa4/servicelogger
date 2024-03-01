@@ -15,9 +15,19 @@ import (
 var sendServiceLogCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Send a service log",
-	Long: `Send service log to the customer from JSON template passed via stdin
+	Long: `Send service log to the customer from JSON template passed via stdin.
 
-Example: servicelogger search | servicelogger send -u 'https://api.openshift.com' -t \"$(ocm token)\" -c $CLUSTER_ID"`,
+` + commonSendArgLongHelpStanza + `
+Example with explicitly set arguments:
+    servicelogger search | servicelogger send -u 'https://api.openshift.com' -t "$(ocm token)" -c "$CLUSTER_ID"
+
+Example sending to multiple clusters:
+    servicelogger search | servicelogger send --cluster-ids 'asdf1234,lkjh0987'
+
+Example sending to multiple clusters setting the environment variable:
+    export CLUSTER_IDS='asdf1234 lkjh0987'
+    servicelogger search | servicelogger send
+`,
 	Args: cobra.NoArgs,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		bindSendArgsToViper(cmd)

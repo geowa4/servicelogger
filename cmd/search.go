@@ -11,8 +11,43 @@ import (
 
 var searchCmd = &cobra.Command{
 	Use:   "search",
-	Short: "Search for a service log",
-	Long:  `Run an interactive TUI to search and discover service log templates`,
+	Short: "Search for a service log and fill in its variables",
+	Long: `Run an interactive TUI to search and discover service log templates. The output of this command will be the service log with all its variables filled in based on user input. For example, take this template.
+
+{
+  "severity": "Warning",
+  "service_name": "SREManualAction",
+  "log_type": "cluster-configuration",
+  "summary": "Action required: Pod(s) preventing Node Drain",
+  "description": "Your cluster is attempting to drain a node but there are pod(s) preventing the drain. The SRE team has identified the pod(s) as '${POD}' running in namespace(s) '${NAMESPACE}'. Please re-schedule the impacted pod(s) so that the node can drain.",
+  "internal_only": false,
+  "doc_references": [
+    "https://access.redhat.com/documentation/en-us/red_hat_openshift_service_on_aws/4/html/nodes/working-with-pods#nodes-pods-pod-distruption-about_nodes-pods-configuring"
+  ],
+  "_tags": [
+    "sop_KubeNodeUnschedulableSRE",
+    "sop_MCDDrainError"
+  ]
+}
+
+The TUI will prompt you to fill in those variables, and the output might look like this.
+
+{
+  "severity": "Warning",
+  "service_name": "SREManualAction",
+  "log_type": "cluster-configuration",
+  "summary": "Action required: Pod(s) preventing Node Drain",
+  "description": "Your cluster is attempting to drain a node but there are pod(s) preventing the drain. The SRE team has identified the pod(s) as 'loki' running in namespace(s) 'logging-ns'. Please re-schedule the impacted pod(s) so that the node can drain.",
+  "internal_only": false,
+  "doc_references": [
+    "https://access.redhat.com/documentation/en-us/red_hat_openshift_service_on_aws/4/html/nodes/working-with-pods#nodes-pods-pod-distruption-about_nodes-pods-configuring"
+  ],
+  "_tags": [
+    "sop_KubeNodeUnschedulableSRE",
+    "sop_MCDDrainError"
+  ]
+}
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		template, err := search.Program()
 		cobra.CheckErr(err)
