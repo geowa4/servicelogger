@@ -38,6 +38,8 @@ func NewModel() *Model {
 	l.KeyMap.Quit.SetKeys("enter", "q")
 	l.KeyMap.Quit.SetHelp("enter/q", "select/quit")
 
+	l.Filter = FilterFunc
+
 	m := &Model{
 		allTemplates:      allTemplates,
 		templateSelection: allTemplates[0],
