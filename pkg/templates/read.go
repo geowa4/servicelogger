@@ -28,10 +28,9 @@ func WalkTemplates(processTemplate func(template *Template)) {
 		}
 		template := &Template{SourcePath: GetRelativePathForManagedNotifications(path)}
 		err = json.Unmarshal(fileBytes, template)
-		if err != nil {
-			return err
+		if err == nil {
+			processTemplate(template)
 		}
-		processTemplate(template)
 		return nil
 	})
 }
