@@ -13,8 +13,21 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "servicelogger",
-	Short: "Find and use service logs to send to troublesome clusters",
+	Use: "servicelogger",
+	Long: `Find and use service logs to send to clusters.
+
+When this is first installed, the cache-update command must be executed. Please see its help for more.
+
+Then, assuming the proper environment variables are set, usage can be as simple as the following.
+
+    servicelogger search | servicelogger send
+
+    servicelogger list
+
+    servicelogger internal
+
+Please see each command's long form help for more details.
+`,
 
 	// Uncomment the following line if your bare application
 	// has an action associated with it:

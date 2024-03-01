@@ -9,9 +9,14 @@ import (
 var internalServiceLogCmd = &cobra.Command{
 	Use:   "internal",
 	Short: "Send an internal service log",
-	Long: `Prompt for and send internal service log 
+	Long: `Prompt for comments and send internal service log.
 
-` + "Example: `servicelogger internal -u 'https://api.openshift.com' -t \"$(ocm token)\" -c $CLUSTER_ID`",
+` + commonSendArgLongHelpStanza + `
+Since there can be a lot of text to send in an internal service log, the form provides hot keys to open the default "EDITOR".
+
+Example:
+    servicelogger internal -u 'https://api.openshift.com' -t \"$(ocm token)\" -c $CLUSTER_ID
+`,
 	Args: cobra.NoArgs,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		bindSendArgsToViper(cmd)

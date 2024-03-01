@@ -19,9 +19,13 @@ var (
 	listCmd = &cobra.Command{
 		Use:   "list",
 		Short: "Display service logs",
-		Long: `Display a filterable list of service logs
+		Long: `Display a filterable list of service logs.
+` + commonOcmFlagLongHelpStanza + `
+The cluster ID must also be specified via the "--cluster-id" flag or the "CLUSTER_ID" environment variable.
 
-` + "Example: `osdctl servicelog list $CLUSTER_ID | servicelogger list`",
+Example:
+    servicelogger list -u 'https://api.openshift.com' -t "$(ocm token)" -c "$CLUSTER_ID"
+`,
 		Args: cobra.NoArgs,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			_ = viper.BindPFlag("ocm_url", cmd.Flags().Lookup("ocm-url"))
