@@ -19,7 +19,7 @@ The default cache directory may be changed by specifying "--cache-directory", se
 *It is HIGHLY recommend this command be executed often to keep the templates up to date.* 
 `,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		_ = viper.BindPFlag("cache_directory", cmd.Flags().Lookup("directory"))
+		_ = viper.BindPFlag(config.CacheDirectoryKey, cmd.Flags().Lookup("directory"))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		templates.CacheManagedNotifications()

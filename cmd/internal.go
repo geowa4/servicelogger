@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/geowa4/servicelogger/pkg/config"
 	"github.com/geowa4/servicelogger/pkg/internalservicelog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,19 +23,19 @@ Example:
 		bindSendArgsToViper(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if !viper.IsSet("cluster_ids") {
-			viper.Set("cluster_ids", []string{viper.GetString("cluster_id")})
+		if !viper.IsSet(config.ClusterIdsKey) {
+			viper.Set(config.ClusterIdsKey, []string{viper.GetString(config.ClusterIdKey)})
 		}
-		cobra.CheckErr(checkRequiredArgsExist("ocm_url", "ocm_token", "cluster_ids"))
+		cobra.CheckErr(checkRequiredArgsExist(config.OcmUrlKey, config.OcmTokenKey, config.ClusterIdsKey))
 
 		desc, confirmation, err := internalservicelog.Program()
 		cobra.CheckErr(err)
 
 		if confirmation {
-			sendServiceLogsToManyClusters(viper.GetStringSlice("cluster_ids"), func(cId string) error {
+			sendServiceLogsToManyClusters(viper.GetStringSlice(config.ClusterIdsKey), func(cId string) error {
 				return sendInternalServiceLog(
-					viper.GetString("ocm_url"),
-					viper.GetString("ocm_token"),
+					viper.GetString(config.OcmUrlKey),
+					viper.GetString(config.OcmTokenKey),
 					cId,
 					desc,
 				)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/geowa4/servicelogger/pkg/config"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	"github.com/spf13/viper"
 	"os"
@@ -28,12 +29,12 @@ Example:
 `,
 		Args: cobra.NoArgs,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			_ = viper.BindPFlag("ocm_url", cmd.Flags().Lookup("ocm-url"))
-			_ = viper.BindPFlag("ocm_token", cmd.Flags().Lookup("ocm-token"))
-			_ = viper.BindPFlag("cluster_id", cmd.Flags().Lookup("cluster-id"))
+			_ = viper.BindPFlag(config.OcmUrlKey, cmd.Flags().Lookup("ocm-url"))
+			_ = viper.BindPFlag(config.OcmTokenKey, cmd.Flags().Lookup("ocm-token"))
+			_ = viper.BindPFlag(config.ClusterIdKey, cmd.Flags().Lookup("cluster-id"))
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			cobra.CheckErr(checkRequiredArgsExist("ocm_url", "ocm_token", "cluster_id"))
+			cobra.CheckErr(checkRequiredArgsExist(config.OcmUrlKey, config.OcmTokenKey, config.ClusterIdKey))
 			serviceLogList := make([]ocm.ServiceLog, 0)
 			var routineErr error
 			ctx, cancel := context.WithCancel(context.Background())
