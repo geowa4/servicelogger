@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/huh"
+	"github.com/geowa4/servicelogger/pkg/config"
 	"github.com/geowa4/servicelogger/pkg/teaspoon"
 	"github.com/geowa4/servicelogger/pkg/templates"
 	"github.com/spf13/cobra"
@@ -33,10 +34,10 @@ Example sending to multiple clusters setting the environment variable:
 		bindSendArgsToViper(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if !viper.IsSet("cluster_ids") {
-			viper.Set("cluster_ids", []string{viper.GetString("cluster_id")})
+		if !viper.IsSet(config.ClusterIdsKey) {
+			viper.Set(config.ClusterIdsKey, []string{viper.GetString(config.ClusterIdKey)})
 		}
-		cobra.CheckErr(checkRequiredArgsExist("ocm_url", "ocm_token", "cluster_ids"))
+		cobra.CheckErr(checkRequiredArgsExist(config.OcmUrlKey, config.OcmTokenKey, config.ClusterIdsKey))
 
 		var template templates.Template
 		input, err := io.ReadAll(os.Stdin)
@@ -45,16 +46,16 @@ Example sending to multiple clusters setting the environment variable:
 		cobra.CheckErr(err)
 		fmt.Println(teaspoon.RenderMarkdown(template.String()))
 
-		clusterIds := viper.GetStringSlice("cluster_ids")
+		clusterIds := viper.GetStringSlice(config.ClusterIdsKey)
 		confirmation := false
 		err = huh.NewForm(huh.NewGroup(huh.NewConfirm().Value(&confirmation).Title(fmt.Sprintf("Send this service log to %v cluster(s)?", len(clusterIds))).Affirmative("Send").Negative("Cancel"))).Run()
 		cobra.CheckErr(err)
 
 		if confirmation {
-			sendServiceLogsToManyClusters(viper.GetStringSlice("cluster_ids"), func(cId string) error {
+			sendServiceLogsToManyClusters(clusterIds, func(cId string) error {
 				return sendServiceLog(
-					viper.GetString("ocm_url"),
-					viper.GetString("ocm_token"),
+					viper.GetString(config.OcmUrlKey),
+					viper.GetString(config.OcmTokenKey),
 					cId,
 					template,
 				)

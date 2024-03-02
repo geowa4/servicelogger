@@ -5,7 +5,16 @@ import (
 	"os"
 )
 
-const commonDirectoryName = "servicelogger"
+const (
+	commonDirectoryName = "servicelogger"
+	FileName            = "config.yaml"
+	FileType            = "yaml"
+	OcmUrlKey           = "ocm_url"
+	OcmTokenKey         = "ocm_token"
+	ClusterIdKey        = "cluster_id"
+	ClusterIdsKey       = "cluster_ids"
+	CacheDirectoryKey   = "cache_directory"
+)
 
 func getDir(cacheOrConfig string) (string, error) {
 	home, err := os.UserHomeDir()

@@ -56,8 +56,8 @@ func initConfig() {
 		configDir, err := config.GetConfigDir()
 		cobra.CheckErr(err)
 		viper.AddConfigPath(configDir)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("config.yaml")
+		viper.SetConfigType(config.FileType)
+		viper.SetConfigName(config.FileName)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

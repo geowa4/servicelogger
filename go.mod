@@ -1,8 +1,8 @@
 module github.com/geowa4/servicelogger
 
-go 1.21
+go 1.22
 
-toolchain go1.21.6
+toolchain go1.22.0
 
 require (
 	github.com/agnivade/levenshtein v1.1.1
@@ -17,6 +17,7 @@ require (
 	github.com/openshift-online/ocm-sdk-go v0.1.392
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.17.0
+	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/xurls/v2 v2.5.0
 )
 
@@ -83,5 +84,4 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

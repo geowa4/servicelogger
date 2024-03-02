@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/geowa4/servicelogger/pkg/config"
 	"github.com/geowa4/servicelogger/pkg/ocm"
 	"github.com/geowa4/servicelogger/pkg/templates"
 	sdk "github.com/openshift-online/ocm-sdk-go"
@@ -21,10 +22,10 @@ func setSendArgsOnCmd(cmd *cobra.Command) {
 }
 
 func bindSendArgsToViper(cmd *cobra.Command) {
-	_ = viper.BindPFlag("ocm_url", cmd.Flags().Lookup("ocm-url"))
-	_ = viper.BindPFlag("ocm_token", cmd.Flags().Lookup("ocm-token"))
-	_ = viper.BindPFlag("cluster_id", cmd.Flags().Lookup("cluster-id"))
-	_ = viper.BindPFlag("cluster_ids", cmd.Flags().Lookup("cluster-ids"))
+	_ = viper.BindPFlag(config.OcmUrlKey, cmd.Flags().Lookup("ocm-url"))
+	_ = viper.BindPFlag(config.OcmTokenKey, cmd.Flags().Lookup("ocm-token"))
+	_ = viper.BindPFlag(config.ClusterIdKey, cmd.Flags().Lookup("cluster-id"))
+	_ = viper.BindPFlag(config.ClusterIdsKey, cmd.Flags().Lookup("cluster-ids"))
 }
 
 func sendServiceLogsToManyClusters(clusterIds []string, sendFunc func(cId string) error) {
